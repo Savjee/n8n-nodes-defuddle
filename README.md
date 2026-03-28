@@ -8,6 +8,10 @@ It is similar in spirit to a webpage content extraction node, but instead of req
 - passes the HTML to Defuddle
 - returns the raw Defuddle response object without modifying its fields
 
+## Important compatibility note
+
+This package currently uses external runtime dependencies (`defuddle` and `jsdom`) and therefore is configured for general community-node use rather than n8n Cloud verification.
+
 ## Installation
 
 Follow the [installation guide for community nodes](https://docs.n8n.io/integrations/community-nodes/installation/).
@@ -56,6 +60,7 @@ Typical output fields may include:
 
 - This package wraps Defuddle’s parsing library in an n8n node.
 - It does not attempt to replicate every internal fetch heuristic from Defuddle’s CLI.
+- Markdown-related behavior is delegated entirely to Defuddle.
 - Because the output is passed through directly from Defuddle, fields may evolve as the upstream library evolves.
 
 ## Development

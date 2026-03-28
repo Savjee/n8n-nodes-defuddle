@@ -9,15 +9,11 @@ import type {
 	INodeTypeDescription,
 	JsonObject,
 } from 'n8n-workflow';
-import {
-	NodeConnectionTypes,
-	NodeOperationError,
-} from 'n8n-workflow';
-import Defuddle from 'defuddle/full';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 const includeRepliesOptions: INodePropertyOptions[] = [
 	{
-		name: 'Auto (Extractor Defaults)',
+		name: 'Auto',
 		value: 'extractors',
 		description: 'Use Defuddle extractor defaults for replies',
 	},
@@ -29,7 +25,6 @@ const includeRepliesOptions: INodePropertyOptions[] = [
 	{
 		name: 'Exclude All Replies',
 		value: 'false',
-		description: 'Exclude all replies',
 	},
 ];
 
@@ -172,6 +167,21 @@ type DefuddleNodeOptions = {
 	includeReplies?: boolean | 'extractors';
 };
 
+type DefuddleNodeModule = {
+	Defuddle: (
+		input: unknown,
+		url?: string,
+		options?: DefuddleNodeOptions,
+	) => Promise<unknown>;
+};
+
+const dynamicImport = new Function(
+	'specifier',
+	'return import(specifier)',
+) as (specifier: string) => Promise<DefuddleNodeModule>;
+
+let defuddleNodeModulePromise: Promise<DefuddleNodeModule> | undefined;
+
 function isNonEmptyString(value: unknown): value is string {
 	return typeof value === 'string' && value.trim().length > 0;
 }
@@ -193,25 +203,52 @@ function normalizeIncludeReplies(
 function buildDefuddleOptions(options: IDataObject): DefuddleNodeOptions {
 	const result: DefuddleNodeOptions = {};
 
-	const booleanKeys: Array<keyof DefuddleNodeOptions> = [
-		'debug',
-		'markdown',
-		'separateMarkdown',
-		'removeExactSelectors',
-		'removePartialSelectors',
-		'removeImages',
-		'useAsync',
-		'removeHiddenElements',
-		'removeLowScoring',
-		'removeSmallImages',
-		'standardize',
-		'removeContentPatterns',
-	];
+	if (typeof options.debug === 'boolean') {
+		result.debug = options.debug;
+	}
 
-	for (const key of booleanKeys) {
-		if (typeof options[key] === 'boolean') {
-			result[key] = options[key] as boolean;
-		}
+	if (typeof options.markdown === 'boolean') {
+		result.markdown = options.markdown;
+	}
+
+	if (typeof options.separateMarkdown === 'boolean') {
+		result.separateMarkdown = options.separateMarkdown;
+	}
+
+	if (typeof options.removeExactSelectors === 'boolean') {
+		result.removeExactSelectors = options.removeExactSelectors;
+	}
+
+	if (typeof options.removePartialSelectors === 'boolean') {
+		result.removePartialSelectors = options.removePartialSelectors;
+	}
+
+	if (typeof options.removeImages === 'boolean') {
+		result.removeImages = options.removeImages;
+	}
+
+	if (typeof options.useAsync === 'boolean') {
+		result.useAsync = options.useAsync;
+	}
+
+	if (typeof options.removeHiddenElements === 'boolean') {
+		result.removeHiddenElements = options.removeHiddenElements;
+	}
+
+	if (typeof options.removeLowScoring === 'boolean') {
+		result.removeLowScoring = options.removeLowScoring;
+	}
+
+	if (typeof options.removeSmallImages === 'boolean') {
+		result.removeSmallImages = options.removeSmallImages;
+	}
+
+	if (typeof options.standardize === 'boolean') {
+		result.standardize = options.standardize;
+	}
+
+	if (typeof options.removeContentPatterns === 'boolean') {
+		result.removeContentPatterns = options.removeContentPatterns;
 	}
 
 	if (isNonEmptyString(options.language)) {
@@ -231,11 +268,16 @@ function buildDefuddleOptions(options: IDataObject): DefuddleNodeOptions {
 
 function toErrorObject(error: unknown): JsonObject {
 	if (error instanceof Error) {
-		return {
+		const result: JsonObject = {
 			message: error.message,
 			name: error.name,
-			stack: error.stack,
 		};
+
+		if (error.stack) {
+			result.stack = error.stack;
+		}
+
+		return result;
 	}
 
 	if (typeof error === 'string') {
@@ -249,6 +291,12 @@ function toErrorObject(error: unknown): JsonObject {
 	};
 }
 
+async function loadDefuddleNodeModule(): Promise<DefuddleNodeModule> {
+	defuddleNodeModulePromise ??= dynamicImport('defuddle/node');
+
+	return await defuddleNodeModulePromise;
+}
+
 export class DefuddleNode implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Defuddle',
@@ -260,6 +308,7 @@ export class DefuddleNode implements INodeType {
 		defaults: {
 			name: 'Defuddle',
 		},
+		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
 		properties: [
@@ -336,11 +385,12 @@ export class DefuddleNode implements INodeType {
 				const dom = new JSDOM(html, {
 					url: normalizedUrl,
 				});
-				const parser = new Defuddle(dom.window.document, {
-					...defuddleOptions,
-					url: normalizedUrl,
-				});
-				const result = await parser.parseAsync();
+				const { Defuddle } = await loadDefuddleNodeModule();
+				const result = await Defuddle(
+					dom.window.document,
+					normalizedUrl,
+					defuddleOptions,
+				);
 				const jsonResult = JSON.parse(JSON.stringify(result)) as JsonObject;
 
 				output.push({
