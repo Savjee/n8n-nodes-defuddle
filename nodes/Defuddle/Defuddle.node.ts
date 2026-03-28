@@ -1,4 +1,4 @@
-import { JSDOM } from 'jsdom';
+import { Window } from 'happy-dom';
 import type {
 	IDataObject,
 	IExecuteFunctions,
@@ -297,7 +297,7 @@ async function loadDefuddleNodeModule(): Promise<DefuddleNodeModule> {
 	return await defuddleNodeModulePromise;
 }
 
-export class DefuddleNode implements INodeType {
+export class Defuddle implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Defuddle',
 		name: 'defuddle',
@@ -382,12 +382,13 @@ export class DefuddleNode implements INodeType {
 				}
 
 				const html = (await this.helpers.httpRequest(requestOptions)) as string;
-				const dom = new JSDOM(html, {
+				const window = new Window({
 					url: normalizedUrl,
 				});
+				window.document.write(html);
 				const { Defuddle } = await loadDefuddleNodeModule();
 				const result = await Defuddle(
-					dom.window.document,
+					window.document,
 					normalizedUrl,
 					defuddleOptions,
 				);

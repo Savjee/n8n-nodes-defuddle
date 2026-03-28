@@ -10,7 +10,7 @@ It is similar in spirit to a webpage content extraction node, but instead of req
 
 ## Important compatibility note
 
-This package currently uses external runtime dependencies (`defuddle` and `jsdom`) and therefore is configured for general community-node use rather than n8n Cloud verification.
+This package currently uses external runtime dependencies (`defuddle` and `happy-dom`) and therefore is configured for general community-node use rather than n8n Cloud verification.
 
 ## Installation
 
