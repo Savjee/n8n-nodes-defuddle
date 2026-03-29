@@ -303,8 +303,9 @@ export class Defuddle implements INodeType {
 		name: 'defuddle',
 		icon: 'file:defuddle.svg',
 		group: ['transform'],
-		version: 1,
-		description: 'Extract main webpage content and metadata using Defuddle',
+		version: 2,
+		description:
+			'Extract main webpage content and metadata from HTML using Defuddle (fetch pages with the HTTP Request node)',
 		defaults: {
 			name: 'Defuddle',
 		},
@@ -313,13 +314,26 @@ export class Defuddle implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		properties: [
 			{
-				displayName: 'URL',
-				name: 'url',
+				displayName: 'HTML',
+				name: 'html',
 				type: 'string',
 				required: true,
 				default: '',
+				placeholder: '={{ $json.body }}',
+				typeOptions: {
+					rows: 12,
+				},
+				description:
+					'Raw HTML to parse. Fetch pages with the HTTP Request node (or another source), then map the response body into this field with an expression (for example the body from the prior item). If the upstream node returns structured output, use the property that holds the HTML string.',
+			},
+			{
+				displayName: 'Document URL',
+				name: 'documentUrl',
+				type: 'string',
+				default: '',
 				placeholder: 'https://example.com/article',
-				description: 'URL of the page to fetch and parse with Defuddle',
+				description:
+					'Optional absolute URL of the document (e.g. the request URL). Improves relative link resolution and metadata. Leave empty if not needed.',
 			},
 			{
 				displayName: 'Options',
@@ -338,58 +352,54 @@ export class Defuddle implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
-				const url = this.getNodeParameter('url', itemIndex) as string;
+				const html = this.getNodeParameter('html', itemIndex) as string;
+				const documentUrlRaw = this.getNodeParameter(
+					'documentUrl',
+					itemIndex,
+					'',
+				) as string;
 				const rawOptions = this.getNodeParameter(
 					'options',
 					itemIndex,
 					{},
 				) as IDataObject;
 
-				if (!isNonEmptyString(url)) {
-					throw new NodeOperationError(this.getNode(), 'URL is required', {
+				if (!isNonEmptyString(html)) {
+					throw new NodeOperationError(this.getNode(), 'HTML is required', {
 						itemIndex,
 					});
 				}
 
-				let normalizedUrl: string;
+				let defuddleUrl: string | undefined;
+				let windowUrl = 'about:blank';
 
-				try {
-					normalizedUrl = new URL(url.trim()).toString();
-				} catch (error) {
-					throw new NodeOperationError(this.getNode(), 'URL must be a valid absolute URL', {
-						itemIndex,
-						description:
-							error instanceof Error ? error.message : undefined,
-					});
+				if (isNonEmptyString(documentUrlRaw)) {
+					try {
+						const normalized = new URL(documentUrlRaw.trim()).toString();
+						defuddleUrl = normalized;
+						windowUrl = normalized;
+					} catch (error) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Document URL must be a valid absolute URL when provided',
+							{
+								itemIndex,
+								description:
+									error instanceof Error ? error.message : undefined,
+							},
+						);
+					}
 				}
 
 				const defuddleOptions = buildDefuddleOptions(rawOptions);
-				const requestOptions: {
-					url: string;
-					method: 'GET';
-					encoding: 'text';
-					headers?: IDataObject;
-				} = {
-					url: normalizedUrl,
-					method: 'GET',
-					encoding: 'text',
-				};
-
-				if (defuddleOptions.language) {
-					requestOptions.headers = {
-						'Accept-Language': defuddleOptions.language,
-					};
-				}
-
-				const html = (await this.helpers.httpRequest(requestOptions)) as string;
 				const window = new Window({
-					url: normalizedUrl,
+					url: windowUrl,
 				});
 				window.document.write(html);
 				const { Defuddle } = await loadDefuddleNodeModule();
 				const result = await Defuddle(
 					window.document,
-					normalizedUrl,
+					defuddleUrl,
 					defuddleOptions,
 				);
 				const jsonResult = JSON.parse(JSON.stringify(result)) as JsonObject;

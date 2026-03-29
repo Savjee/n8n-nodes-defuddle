@@ -1,7 +1,7 @@
 {
 	"name": "n8n-nodes-defuddle",
 	"version": "0.1.0",
-	"description": "n8n community node that wraps Defuddle for URL-based content extraction.",
+	"description": "n8n community node that wraps Defuddle for HTML content extraction (fetch HTML with the HTTP Request node).",
 	"license": "MIT",
 	"homepage": "https://github.com/Savjee/n8n-nodes-defuddle",
 	"keywords": [
