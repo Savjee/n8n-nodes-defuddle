@@ -8,7 +8,8 @@
 		"n8n-community-node-package"
 	],
 	"author": {
-		"name": "Xavier Decuyper"
+		"name": "Xavier Decuyper",
+		"email": "xavier@simplyexplained.com"
 	},
 	"repository": {
 		"type": "git",
