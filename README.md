@@ -5,7 +5,6 @@ This is an n8n community node that wraps [Defuddle](https://github.com/kepano/de
 It is similar in spirit to my [webpage content extraction node](https://github.com/Savjee/n8n-nodes-webpage-content-extractor).
 
 
-
 ## Installation
 
 Follow the [installation guide for community nodes](https://docs.n8n.io/integrations/community-nodes/installation/).
