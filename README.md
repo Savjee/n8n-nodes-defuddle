@@ -50,6 +50,9 @@ Typical output fields may include:
 - Because the output is passed through directly from Defuddle, fields may evolve as the upstream library evolves.
 
 ## Example workflow
+
+![](https://github.com/Savjee/n8n-nodes-defuddle/blob/main/.assets/example-workflow.png?raw=true)
+
 You can copy/paste this into your own n8n install.
 
 ```
