@@ -8,7 +8,7 @@ import type {
 	INodeTypeDescription,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 
 const includeRepliesOptions: INodePropertyOptions[] = [
 	{
@@ -309,8 +309,8 @@ export class Defuddle implements INodeType {
 			name: 'Defuddle',
 		},
 		usableAsTool: true,
-		inputs: [NodeConnectionTypes.Main],
-		outputs: [NodeConnectionTypes.Main],
+		inputs: ['main'],
+		outputs: ['main'],
 		properties: [
 			{
 				displayName: 'HTML',
