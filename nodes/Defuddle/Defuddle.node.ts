@@ -1,4 +1,3 @@
-import { Window } from 'happy-dom';
 import type {
 	IDataObject,
 	IExecuteFunctions,
@@ -370,38 +369,27 @@ export class Defuddle implements INodeType {
 					});
 				}
 
-				let defuddleUrl: string | undefined;
-				let windowUrl = 'about:blank';
+			let defuddleUrl: string | undefined;
 
-				if (isNonEmptyString(documentUrlRaw)) {
-					try {
-						const normalized = new URL(documentUrlRaw.trim()).toString();
-						defuddleUrl = normalized;
-						windowUrl = normalized;
-					} catch (error) {
-						throw new NodeOperationError(
-							this.getNode(),
-							'Document URL must be a valid absolute URL when provided',
-							{
-								itemIndex,
-								description:
-									error instanceof Error ? error.message : undefined,
-							},
-						);
-					}
+			if (isNonEmptyString(documentUrlRaw)) {
+				try {
+					defuddleUrl = new URL(documentUrlRaw.trim()).toString();
+				} catch (error) {
+					throw new NodeOperationError(
+						this.getNode(),
+						'Document URL must be a valid absolute URL when provided',
+						{
+							itemIndex,
+							description:
+								error instanceof Error ? error.message : undefined,
+						},
+					);
 				}
+			}
 
-				const defuddleOptions = buildDefuddleOptions(rawOptions);
-				const window = new Window({
-					url: windowUrl,
-				});
-				window.document.write(html);
-				const { Defuddle } = await loadDefuddleNodeModule();
-				const result = await Defuddle(
-					window.document,
-					defuddleUrl,
-					defuddleOptions,
-				);
+			const defuddleOptions = buildDefuddleOptions(rawOptions);
+			const { Defuddle } = await loadDefuddleNodeModule();
+			const result = await Defuddle(html, defuddleUrl, defuddleOptions);
 				const jsonResult = JSON.parse(JSON.stringify(result)) as JsonObject;
 
 				output.push({
